@@ -1,6 +1,12 @@
 # Topic-Aware Abstractive Text Summarization
 This repository is the artifact associated with our paper **Topic-Aware Abstractive Text Summarization**. In this paper, we propose a topic-aware abstractive summarization (TAAS) framework by leveraging the underlying semantic structure of documents represented by their latent topics.
 
+Note: our work is built on top of HuggingFace ```transformers```. There are two key components in our paper: topic modeling component and summarization component. 
+
+- For summarization component, our code is built on top of the summarization pipeline built by HuggingFace. You can visit their example code in this link: https://github.com/huggingface/transformers/tree/master/examples/seq2seq.
+
+- For topic modeling component, we modified the code from https://github.com/YongfeiYan/Neural-Document-Modeling.
+
 ## Dataset
 We use CNN/Daily Mail dataset in our paper. You can download the dataset using the link provided by HuggingFace:
 ```bash
@@ -21,10 +27,6 @@ $ pip install -r requirements.txt
 ```
 
 ## Model Training
-There are two key components in our paper: topic modeling component and summarization component. Our code is built on top of the summarization pipeline built by HuggingFace. You can visit their example code in this link: https://github.com/huggingface/transformers/tree/master/examples/seq2seq.
-
-For topic modeling component, we modified the code from https://github.com/YongfeiYan/Neural-Document-Modeling.
-
 To train TAAS, you can execute the following command:
 
 ```bash
