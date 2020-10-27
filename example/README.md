@@ -18,7 +18,7 @@ Bob Barker returned to host "The Price Is Right" on Wednesday. Barker, 91, had r
 |  PEGASUS   | Barker hosted "The Price Is Right" for 35 years. He stepped down in 2007. |
 | ProphetNet | A TV legend returned to doing what he does best. Contestants told to "come on down!" on the April 1 edition of "The Price Is Right" encountered not host Drew Xarey. |
 |     T5     | "The Price Is Right" returned to hosting for the first time in eight years. Despite being away from the show for most of the past 8 years, a television legend didn't seem to miss a beat.  Bob Barker hosted the game show for 35 years before stepping down in 2007. |
-|  **TAAS**  | Bob Barker returns to hosting "The Price Is Right" for the first time in eight years. The 91-year-old TV legend stepped down from the show in 2007 after 35 years on the show, which he hosted for 35 years. |
+|  **TAAS**  | Bob Barker is back on "The Price Is Right" for the first time in eight years . The 91-year-old TV legend hosted the show for 35 years before stepping down in 2007 . Drew Carey finished up the show's first edition on April 1 . The game show will air on CBS at 8 p.m. |
 
 
 
