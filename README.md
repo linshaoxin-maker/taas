@@ -7,8 +7,7 @@ We use CNN/Daily Mail dataset in our paper. You can download the dataset using t
 cd data
 wget https://cdn-datasets.huggingface.co/summarization/cnn_dm_v2.tgz
 tar -xzvf cnn_dm_v2.tgz
-mv cnn_cln cnn_dm
-export CNN_DIR=data/cnn_dm
+mv cnn_cln cnndm
 ```
 
 ## Local Setup
