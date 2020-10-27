@@ -1,4 +1,8 @@
-"""PyTorch TAAS model"""
+"""
+PyTorch TAAS model
+
+This code file modifies the "modeling_bart.py" file in HuggingFace transformers (https://github.com/huggingface/transformers).
+"""
 import math
 import random
 import warnings
