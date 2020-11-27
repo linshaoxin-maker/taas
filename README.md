@@ -1,4 +1,8 @@
 # Topic-Aware Abstractive Text Summarization
+**This repo is working in progress. Currently the project is modified using ```transformer``` from HuggingFace and NTM from @YongfeiYan. We are planning to release the checkpoints in the sooner future, and we are still working on this repo. Thank you! **
+
+
+
 This repository is the artifact associated with our paper **Topic-Aware Abstractive Text Summarization**. In this paper, we propose a topic-aware abstractive summarization (TAAS) framework by leveraging the underlying semantic structure of documents represented by their latent topics.
 
 Note: our work is built on top of HuggingFace ```transformers```. There are two key components in our paper: topic modeling component and summarization component. 

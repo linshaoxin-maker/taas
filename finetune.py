@@ -52,15 +52,6 @@ except ImportError:
     )
     from callbacks import Seq2SeqLoggingCallback, get_checkpoint_callback, get_early_stopping_callback
 
-from transformers import AutoTokenizer
-from gensim.corpora import Dictionary
-from gensim.test.utils import datapath
-from data_utils import DocDataset
-import re
-from mlutils.exp import yaml_load
-from mlutils.pt.training import GSMTrainer, extend_config_reference
-from torch.autograd import Variable
-
 logger = logging.getLogger(__name__)
 
 
@@ -149,11 +140,11 @@ class SummarizationModule(BaseTransformer):
         )
         return lmap(str.strip, gen_text)
 
-    def _step(self, batch: dict, topic_p) -> Tuple:
+    def _step(self, batch: dict) -> Tuple:
         pad_token_id = self.tokenizer.pad_token_id
 
-        source_ids, source_mask, target_ids = batch["input_ids"], batch["attention_mask"], batch["decoder_input_ids"]
-        # source_ids, source_mask, target_ids, topic_p = batch["input_ids"], batch["attention_mask"], batch["decoder_input_ids"], batch['topic_p']
+        # source_ids, source_mask, target_ids = batch["input_ids"], batch["attention_mask"], batch["decoder_input_ids"]
+        source_ids, source_mask, target_ids, topic_p = batch["input_ids"], batch["attention_mask"], batch["decoder_input_ids"], batch['topic_p']
 
         decoder_input_ids = target_ids[:, :-1].contiguous()
         lm_labels = target_ids[:, 1:].clone()
@@ -175,106 +166,12 @@ class SummarizationModule(BaseTransformer):
         return (loss,)
 
     def training_step(self, batch, batch_idx) -> Dict:
-        # load config for GSM
-        config = yaml_load(f"data/config/gsm.yaml")
-        # load dict
-        dictionary = Dictionary.load(datapath('dict-www-cnndm-unigram'))
-
-        # vocab size for topic modeling
-        vocab_size = len(dictionary)
-        # model
-        config['hidden']['features'][0] = vocab_size
-
-        # trainer batch
-        config['trainer_batch']['test_sample'] = 1
-        config = extend_config_reference(config)
-        gsm_trainer = config['GSMtrainer']
-        gsm_trainer['base_dir'] = f"log/bart-large-cnn-finetune"
-        gsm_trainer = GSMTrainer.from_config(gsm_trainer)
-
-        # -----------------------------------------
-        # Topic Modeling - GSM
-        # -----------------------------------------
-        batch_size = batch["input_ids"].size()[0]
-
-        docs = []
-        for batch_num in range(batch_size):
-            # extract the batch_sentence
-            batch_sentence = self.tokenizer.decode(batch["input_ids"][batch_num].tolist(), skip_special_tokens=True)
-            # change to lowercase and split to list
-            batch_sentence_list = batch_sentence.split(" ")
-            text = ' '.join([x for x in batch_sentence_list])
-            fine_text = text.replace(' ##', '').lower()
-            batch_sentence = re.sub(r'[^\w\s]', '', fine_text)
-            # batch_sentence: change to the cleaned news for topic modeling
-            # change to training data format in topic modeling
-            gsm_data_bow = dictionary.doc2bow(batch_sentence.split(" "))
-            docs.append(gsm_data_bow)
-
-        # gsm_data: data for topic modeling
-        gsm_data = DataLoader(DocDataset(docs, len(dictionary), device='cuda'),
-                              batch_size=config['dataset']['batch_size'], drop_last=False, num_workers=0)
-
-        gsm_trainer.__dict__['train_iterator'] = gsm_data
-
-        topic_loss, topic_p = gsm_trainer.co_train(vocab_size, training=True)
-
-        del gsm_data
-
-        loss_tensors = self._step(batch, topic_p=topic_p)
+        loss_tensors = self._step(batch)
         logs = {name: loss for name, loss in zip(self.loss_names, loss_tensors)}
         return {"loss": loss_tensors[0], "log": logs}
 
     def validation_step(self, batch, batch_idx) -> Dict:
-        # load config for GSM
-        config = yaml_load(f"data/config/gsm.yaml")
-        # load dict
-        dictionary = Dictionary.load(datapath('dict-www-cnndm-unigram'))
-
-        # vocab size for topic modeling
-        vocab_size = len(dictionary)
-        # model
-        config['hidden']['features'][0] = vocab_size
-
-        # trainer batch
-        config['trainer_batch']['test_sample'] = 1
-        config = extend_config_reference(config)
-        gsm_trainer = config['GSMtrainer']
-        gsm_trainer['base_dir'] = f"log/bart-large-cnn-finetune"
-        gsm_trainer = GSMTrainer.from_config(gsm_trainer)
-
-        # -----------------------------------------
-        # Topic Modeling - GSM
-        # -----------------------------------------
-        batch_size = batch["input_ids"].size()[0]
-
-        docs = []
-        for batch_num in range(batch_size):
-            # extract the batch_sentence
-            batch_sentence = self.tokenizer.decode(batch["input_ids"][batch_num].tolist(), skip_special_tokens=True)
-            # change to lowercase and split to list
-            batch_sentence_list = batch_sentence.split(" ")
-            text = ' '.join([x for x in batch_sentence_list])
-            fine_text = text.replace(' ##', '').lower()
-            batch_sentence = re.sub(r'[^\w\s]', '', fine_text)
-            # batch_sentence: change to the cleaned news for topic modeling
-            # change to training data format in topic modeling
-            gsm_data_bow = dictionary.doc2bow(batch_sentence.split(" "))
-            docs.append(gsm_data_bow)
-
-        # gsm_data: data for topic modeling
-        gsm_data = DataLoader(DocDataset(docs, len(dictionary), device='cuda'),
-                              batch_size=config['dataset']['batch_size'], drop_last=False, num_workers=0)
-
-        gsm_trainer.__dict__['train_iterator'] = gsm_data
-
-        topic_loss, topic_p = gsm_trainer.co_train(vocab_size, training=False)
-
-        topic_p = Variable(topic_p.data, requires_grad=False)
-
-        del gsm_data
-
-        return self._generative_step(batch, topic_p)
+        return self._generative_step(batch)
 
     def validation_epoch_end(self, outputs, prefix="val") -> Dict:
         self.step_count += 1
@@ -297,15 +194,14 @@ class SummarizationModule(BaseTransformer):
     def calc_generative_metrics(self, preds, target) -> Dict:
         return calculate_rouge(preds, target)
 
-    def _generative_step(self, batch: dict, topic_p) -> dict:
+
+    def _generative_step(self, batch: dict) -> dict:
         pad_token_id = self.tokenizer.pad_token_id
         source_ids, source_mask, y = Seq2SeqDataset.trim_seq2seq_batch(batch, pad_token_id)
-
         t0 = time.time()
 
-        # topic_p = batch['topic_p']
+        topic_p = batch['topic_p']
 
-        # self.model: BartForConditionalGeneration
         generated_ids = self.model.generate(
             input_ids=source_ids,
             attention_mask=source_mask,
@@ -318,7 +214,7 @@ class SummarizationModule(BaseTransformer):
         gen_time = (time.time() - t0) / source_ids.shape[0]
         preds = self.ids_to_clean_text(generated_ids)
         target = self.ids_to_clean_text(y)
-        loss_tensors = self._step(batch, topic_p=topic_p)
+        loss_tensors = self._step(batch)
         base_metrics = {name: loss for name, loss in zip(self.loss_names, loss_tensors)}
         rouge: Dict = self.calc_generative_metrics(preds, target)
         summ_len = np.mean(lmap(len, generated_ids))

@@ -18,4 +18,3 @@ tensorboardX
 torch==1.4.0
 transformers
 fairseq
-pytorch_lightning==0.8.5

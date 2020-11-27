@@ -24,8 +24,6 @@ from transformers import (
     BartForConditionalGeneration
 )
 
-from modeling_taas import BartForConditionalGeneration
-
 logger = logging.getLogger(__name__)
 
 MODEL_MODES = {
@@ -61,26 +59,26 @@ class BaseTransformer(pl.LightningModule):
         self.output_dir = Path(self.hparams.output_dir)
         cache_dir = self.hparams.cache_dir if self.hparams.cache_dir else None
 
+        # load the config for "sshleifer/distilbart-cnn-12-6"
         self.config = AutoConfig.from_pretrained(
-            self.hparams.model_name_or_path,
+            "sshleifer/distilbart-cnn-12-6",
             **({"num_labels": num_labels} if num_labels is not None else {}),
             cache_dir=cache_dir,
             **config_kwargs,
         )
 
+        # tokenizer: use pretrained tokenizer for "sshleifer/distilbart-cnn-12-6"
         self.tokenizer = AutoTokenizer.from_pretrained(
-            self.hparams.model_name_or_path,
+            "sshleifer/distilbart-cnn-12-6",
             cache_dir=cache_dir,
         )
 
         # load the pretrained model
-        # self.model_type = MODEL_MODES[mode]
-        # self.model = self.model_type.from_pretrained(self.hparams.model_name_or_path,
-        #                                              from_tf=bool(".ckpt" in self.hparams.model_name_or_path),
-        #                                              config=self.config,
-        #                                              cache_dir=cache_dir, )
-
-        self.model = BartForConditionalGeneration(self.config)
+        self.model_type = MODEL_MODES[mode]
+        self.model = self.model_type.from_pretrained(self.hparams.model_name_or_path,
+                                                     from_tf=bool(".ckpt" in self.hparams.model_name_or_path),
+                                                     config=self.config,
+                                                     cache_dir=cache_dir, )
 
     def load_hf_checkpoint(self, *args, **kwargs):
         self.model = self.model_type.from_pretrained(*args, **kwargs)
